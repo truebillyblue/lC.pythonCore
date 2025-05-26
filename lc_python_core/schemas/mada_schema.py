@@ -88,6 +88,11 @@ class TemporalHintProvenanceL2Enum(str, Enum):
     FALLBACK_L1_CREATION_TIME = "fallback_L1_creation_time"
     PARSING_ERROR_L2 = "parsing_error_L2"
 
+class FieldTemporalContext(BaseModel):
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+
 class L2ValidationStatusOfFrameEnum(str, Enum):
     SUCCESS_FRAMED = "Success_Framed"
     FAILURE_SIZEORNOISE = "Failure_SizeOrNoise"
@@ -937,7 +942,7 @@ class L5FieldStateObj(BaseModel):
     field_topic_summary: Optional[str] = None
     field_status: Optional[FieldStatusEnum] = None # Made optional
     related_field_uids: List[str] = Field(default_factory=list) # CRUX UID
-    field_temporal_context: Optional[dict] = None # Simplified for now, requires FieldTemporalContext model
+    field_temporal_context: Optional[FieldTemporalContext] = None
     field_participants: List[FieldParticipant] = Field(default_factory=list)
     interaction_pattern_summary: Optional[InteractionPatternSummary] = None
     active_governance: Optional[ActiveGovernance] = None
