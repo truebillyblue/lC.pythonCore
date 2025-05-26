@@ -127,7 +127,7 @@ echo_agent = Agent(
     model="gemini-1.5-flash", 
     tools=[
         FunctionTool(
-            fn=echo_tool,
+            func=process_with_lc_core_tool,
             description="Echoes the input message."
         )
     ]
