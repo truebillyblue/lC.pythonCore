@@ -12,7 +12,7 @@ from ..schemas.mada_schema import (
 # The next line was duplicated and corrected, ensure only one import for mada_schema components
 # from ..schemas.mada_schema import MadaSeed, L6ReflectionPayloadObj, L6Trace, L7EncodedApplication, L7Trace as L7TraceModel, SeedQAQC, IntegrityFinding, SeedOutputItem, L7Backlog, PBIEntry, AlignmentVector, L7EpistemicStateEnum, SeedIntegrityStatusEnum, QAQCCheckCategoryCodeEnum, QAQCSeverityLevelEnum, L7OutputConsumerTypeEnum, L7OutputModalityEnum, L7PbiTypeEnum, L7TemporalPlaneEnum, L7DimensionalPlaneEnum, PayloadMetadataTarget # Ensure all models are imported via relative path
 from ..services.mock_lc_core_services import mock_lc_gov_core_get_policy
-from ....lc_adk_agent.main import process_with_lc_core_tool # Added for ADK agent
+from lc_python_core.lc_adk_agent.main import process_with_lc_core_tool # Added for ADK agent
 
 # Basic logging function placeholder
 def log_internal_error(helper_name: str, error_info: Dict):
