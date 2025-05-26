@@ -127,8 +127,7 @@ echo_agent = Agent(
     model="gemini-1.5-flash", 
     tools=[
         FunctionTool(
-            func=process_with_lc_core_tool,
-            description="Echoes the input message."
+            func=process_with_lc_core_tool
         )
     ]
 )
@@ -140,8 +139,7 @@ lc_core_agent = Agent(
     model="gemini-1.5-flash", # Or any other valid model
     tools=[
         FunctionTool(
-            fn=process_with_lc_core_tool,
-            description="Processes the user query via lc_python_core SOPs."
+            func=process_with_lc_core_tool
         )
     ]
 )

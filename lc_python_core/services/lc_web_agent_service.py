@@ -251,3 +251,9 @@ if __name__ == '__main__':
     assert "Error: Invalid JSON in interaction_script_json" in result5['status']
 
     print("\n--- All local tests for execute_web_interaction finished ---")
+
+
+# Added stubs
+def execute_web_interaction(payload: dict) -> dict:
+    print("[Stub] execute_web_interaction called")
+    return {"status": "stubbed", "received": payload}

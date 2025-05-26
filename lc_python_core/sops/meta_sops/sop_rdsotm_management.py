@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 import uuid # For component IDs if not full CRUX UIDs yet
 
-from ....services.lc_mem_service import ( # Adjusted for potential deeper structure if meta_sops is a sub-package
+from lc_python_core.services.lc_mem_service import ( # Adjusted for potential deeper structure if meta_sops is a sub-package
     mock_lc_mem_core_ensure_uid,
     mock_lc_mem_core_create_object,
     mock_lc_mem_core_get_object,

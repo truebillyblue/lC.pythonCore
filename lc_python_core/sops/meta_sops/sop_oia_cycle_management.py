@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any
 import uuid # For generating observation_id etc. if not full CRUX UIDs yet for components
 
 # Assuming lc_mem_service is now the primary way to interact with MADA (file-based)
-from ...services.lc_mem_service import (
+from lc_python_core.services.lc_mem_service import (
     mock_lc_mem_core_ensure_uid,
     mock_lc_mem_core_create_object,
     mock_lc_mem_core_get_object,

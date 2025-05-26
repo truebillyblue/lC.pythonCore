@@ -31,6 +31,10 @@ def log_internal_info(func_name: str, params: dict): print(f"INFO:{func_name}:{p
 # Added missing log_internal_warning, assuming it's needed or was intended
 def log_internal_warning(func_name: str, params: dict): print(f"WARNING:{func_name}:{params}")
 
+def write_mada_object(mada: dict) -> dict:
+    print("[Stub] write_mada_object called")
+    return {"status": "stubbed", "received": mada}
+
 
 def mock_lc_mem_core_ensure_uid(object_type: str, context_description: Optional[str] = None, existing_uid_candidate: Optional[str] = None) -> str:
     # Basic CRUX UID structure: urn:crux:uid::[UUIDv4 hex]
