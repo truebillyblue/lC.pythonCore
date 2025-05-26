@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Union, Any, Annotated
 from enum import Enum
 
-from pydantic import BaseModel, Field, conint, confloat, constr
+from pydantic import BaseModel, Field, conint, confloat, constr, StringConstraints
 
 
 # Forward declarations for models that are defined later
