@@ -704,7 +704,7 @@ class ConsequenceVector(BaseModel):
     delay_ms: Optional[int] = None
 
 class AACAssessabilityMap(BaseModel):
-    version: Annotated[str, StringConstraints(regex=r"^0\.1\.1$")] # Using regex for const
+    version: Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")] # Using regex for const
     die_score: float
     consequence_vector: ConsequenceVector
     dialogue_intensity: float
@@ -731,7 +731,7 @@ class EngagedLevelFindings(BaseModel):
     M10_Macrosystem: Optional[List[LevelFindingItem]] = Field(default_factory=list)
 
 class PersonaAlignmentContextEngaged(BaseModel):
-    version: Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]
+    version: Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]
     persona_uid: str # CRUX UID
     alignment_profile_ref: str # CRUX UID
     profile_version_ref: Optional[str] = None
@@ -741,7 +741,7 @@ class PersonaAlignmentContextEngaged(BaseModel):
     engaged_level_findings: Optional[EngagedLevelFindings] = None # Made optional
 
 class TraceThreadingContext(BaseModel):
-    version: Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]
+    version: Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]
     parent_trace_id: Optional[str] = None # CRUX UID
     chain_id: Optional[str] = None # CRUX UID or String
     recursion_depth: Optional[int] = None
@@ -913,7 +913,7 @@ class FieldObjectives(BaseModel):
 
 class CurrentTraceSOPProvenance(BaseModel):
     processed_trace_id: str # CRUX UID
-    sop_executed_at_L5: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.field_click$")]
+    sop_executed_at_L5: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.field_click$")]
     field_state_version_before_this_update: Optional[str] = None
     key_changes_by_this_trace: List[str] = Field(default_factory=list)
 
@@ -962,7 +962,7 @@ class PayloadMetadataTarget(BaseModel):
     channel_hint: Optional[str] = None
 
 class PayloadMetadata(BaseModel):
-    generation_sop: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.reflect_boom$")]
+    generation_sop: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.reflect_boom$")]
     generation_timestamp: datetime
     source_trace_id: str # CRUX UID
     source_field_instance_uid: Optional[str] = None # CRUX UID, made optional as not in all MR logic paths
@@ -975,20 +975,20 @@ class PayloadMetadata(BaseModel):
     error_details: Optional[str] = None # Added from MR logic example
 
 class RedactionStatus(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.0$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.0$")]] = None # Made optional
     redaction_applied: bool
     redaction_policy_ref: Optional[str] = None
     redacted_categories_hint: List[str] = Field(default_factory=list)
 
 class OmittedContentSummary(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]] = None # Made optional
     omission_applied: bool
     omitted_categories: List[OmittedContentCategoryEnum] = Field(default_factory=list)
     omission_rationale_code: Optional[OmissionRationaleCodeEnum] = None
 
 
 class TransformationMetadata(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]] = None # Made optional
     selection_profile_applied: Optional[str] = None
     transformation_profile_applied: Optional[str] = None
     adaptation_profile_applied: Optional[str] = None
@@ -998,20 +998,20 @@ class TransformationMetadata(BaseModel):
     omitted_content_summary: OmittedContentSummary
 
 class AssessedCynefinState(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.0$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.0$")]] = None # Made optional
     domain: CynefinDomainEnum
     rationale_hint: Optional[str] = None
     confidence_score: Optional[confloat(ge=0, le=1)] = None
 
 class CynefinZoneTransition(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]] = None # Made optional
     from_domain: str
     to_formatted_domain_hint: str
     transition_risk_level: str # Not an enum in schema, but has fixed values in MR
     rationale: Optional[str] = None
 
 class BraveSpaceReflection(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.0$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.0$")]] = None # Made optional
     L5_activation_status_hint: Optional[str] = None
     L5_dissent_strength_hint: Optional[str] = None
     L5_tension_index_hint: Optional[float] = None
@@ -1019,7 +1019,7 @@ class BraveSpaceReflection(BaseModel):
     L6_representation_discomfort_risk_hint: RepresentationDiscomfortRiskHintEnum = RepresentationDiscomfortRiskHintEnum.MINIMAL_DISCOMFORT
 
 class ReflectionSurface(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.2$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.2$")]] = None # Made optional
     assessed_cynefin_state: AssessedCynefinState
     cynefin_zone_transition: Optional[CynefinZoneTransition] = None
     representation_warning_flags: List[str] = Field(default_factory=list)
@@ -1032,14 +1032,14 @@ class KeyLevelFindingSummary(BaseModel):
     relevance_score_to_intent: Optional[confloat(ge=0, le=1)] = None
 
 class ReflectedPAContextSummary(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.0$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.0$")]] = None # Made optional
     source_pa_profile_ref: Optional[str] = None # CRUX UID
     source_pa_engagement_status: Optional[str] = None
     key_level_findings_summary: List[KeyLevelFindingSummary] = Field(default_factory=list)
     alignment_gap_summary: List[str] = Field(default_factory=list)
 
 class FieldDiagnosticsSummaryHints(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.0$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.0$")]] = None # Made optional
     L5_epistemic_state_hint: Optional[str] = None
     maturity_stage_hint: Optional[str] = None
     aac_visibility_score_hint: Optional[confloat(ge=0, le=1)] = None
@@ -1051,7 +1051,7 @@ class MultimodalPackageItem(BaseModel):
     rendering_hint: Optional[str] = None
 
 class PayloadContent(BaseModel):
-    version: Optional[Annotated[str, StringConstraints(regex=r"^0\.1\.1$")]] = None # Made optional
+    version: Optional[Annotated[str, StringConstraints(pattern=r"^0\.1\.1$")]] = None # Made optional
     structured_data: Optional[dict] = None
     formatted_text: Optional[str] = None
     multimodal_package: Optional[List[MultimodalPackageItem]] = None
@@ -1161,7 +1161,7 @@ class SeedContent(BaseModel):
 # Trace metadata models
 class L1Trace(BaseModel):
     version_L1_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.startle$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.startle$")]
     completion_timestamp_L1: datetime # Renamed from completion_timestamp_l1
     epistemic_state_L1: L1EpistemicStateOfStartleEnum
     L1_trace_creation_time_from_context: datetime # Renamed
@@ -1174,7 +1174,7 @@ class L1Trace(BaseModel):
 
 class L2Trace(BaseModel):
     version_L2_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.frame_click$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.frame_click$")]
     completion_timestamp_L2: datetime # Renamed
     epistemic_state_L2: L2EpistemicStateOfFramingEnum
     L2_input_class_determined_in_trace: Optional[InputClassL2Enum] = None # Renamed
@@ -1189,7 +1189,7 @@ class L2Trace(BaseModel):
 
 class L3Trace(BaseModel):
     version_L3_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.keymap_click$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.keymap_click$")]
     completion_timestamp_L3: datetime # Renamed
     epistemic_state_L3: Optional[str] = None # Enum: Keymapped_Successfully, LCL-Clarify-Semantics_L3 etc.
     L3_primary_language_detected_code: Optional[str] = None # Renamed
@@ -1201,7 +1201,7 @@ class L3Trace(BaseModel):
 
 class L4Trace(BaseModel):
     version_L4_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.anchor_click$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.anchor_click$")]
     completion_timestamp_L4: datetime # Renamed
     epistemic_state_L4: L4EpistemicStateOfAnchoringEnum
     L4_pa_profile_engaged_ref_in_trace: Optional[str] = None # CRUX UID, Renamed
@@ -1214,7 +1214,7 @@ class L4Trace(BaseModel):
 
 class L5Trace(BaseModel):
     version_L5_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.field_click$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.field_click$")]
     completion_timestamp_L5: datetime # Renamed
     epistemic_state_L5: L5EpistemicStateOfFieldProcessingEnum
     L5_field_instance_uid_processed: Optional[str] = None # CRUX UID, Renamed
@@ -1229,7 +1229,7 @@ class L5Trace(BaseModel):
 
 class L6Trace(BaseModel):
     version_L6_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.reflect_boom$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.reflect_boom$")]
     completion_timestamp_L6: datetime # Renamed
     epistemic_state_L6: L6EpistemicStateEnum
     L6_presentation_target_consumer_type: Optional[ConsumerTypeEnum] = None # Renamed
@@ -1250,7 +1250,7 @@ class L7TraceActionExecutionSummary(BaseModel): # Added from MR logic example
 
 class L7Trace(BaseModel):
     version_L7_trace_schema: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")]
-    sop_name: Annotated[str, StringConstraints(regex=r"^lC\.SOP\.apply_done$")]
+    sop_name: Annotated[str, StringConstraints(pattern=r"^lC\.SOP\.apply_done$")]
     completion_timestamp_L7: datetime # Renamed
     epistemic_state_L7: L7EpistemicStateEnum
     L7_application_intent_resolved: Optional[str] = None # Renamed
