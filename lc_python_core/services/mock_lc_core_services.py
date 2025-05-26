@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict
+from typing import Optional, Dict, Any, List, Union
 
 # In-memory store for mock objects
 mock_mada_store: Dict[str, Any] = {}
