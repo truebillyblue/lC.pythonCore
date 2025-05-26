@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "google-adk>=0.1.0",
-        "pydantic>=1.10,<2.0"
+        "pydantic>=2.0,<3.0"
     ],
     python_requires='>=3.8',
 )

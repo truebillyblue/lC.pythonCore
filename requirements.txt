@@ -1,4 +1,4 @@
-pydantic>=1.10.0,<2.0.0
+pydantic>=2.0,<3.0
 # Pinned to v1.x for now due to potential 'constr' evaluation issues observed with default/v2.
 # Further testing needed to confirm Pydantic v2 compatibility for all models.
 requests>=2.20.0
