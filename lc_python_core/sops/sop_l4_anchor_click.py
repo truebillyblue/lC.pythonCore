@@ -5,7 +5,7 @@ from ..schemas.mada_schema import ( # Corrected path
     MadaSeed, L3SurfaceKeymapObj, L4AnchorStateObj, L4Trace,
     PersonaAlignmentContextEngaged, PAEngagementStatusEnum, EngagedLevelFindings, LevelFindingItem, FindingTypeEnum,
     ResolvedEntity, ResolutionSummary, # Assuming ResolvedEntity is the correct model for L4 from schema
-    AacAssessabilityMap, ConsequenceVector,
+    AACAssessabilityMap, ConsequenceVector,
     IdentifiedKnowledgeGapL4, KnowledgeGapTypeEnum, KnowledgeGapPriorityEnum, # IdentifiedKnowledgeGapL4 is used for KnowledgeGapL4
     L4EpistemicStateOfAnchoringEnum, L4ValidationStatusEnum,
     TemporalSummaryL4, RelationshipSummaryL4, InterpretationSummaryL4, ValidationSummaryL4, TraceThreadingContext
@@ -108,11 +108,11 @@ def _anchor_resolve_entities_from_surface_map(l3_surface_keymap_obj: L3SurfaceKe
         ))
     return resolved_entities_list
 
-def _anchor_assess_aac_map(working_anchor_state_obj: L4AnchorStateObj, l3_surface_keymap_obj: L3SurfaceKeymapObj, pa_context_engaged: PersonaAlignmentContextEngaged, prior_aac_map_from_seed_anchor: Optional[Dict[str, Any]]) -> AacAssessabilityMap:
+def _anchor_assess_aac_map(working_anchor_state_obj: L4AnchorStateObj, l3_surface_keymap_obj: L3SurfaceKeymapObj, pa_context_engaged: PersonaAlignmentContextEngaged, prior_aac_map_from_seed_anchor: Optional[Dict[str, Any]]) -> AACAssessabilityMap:
     """
-    Baseline: Returns a default AacAssessabilityMap object.
+    Baseline: Returns a default AACAssessabilityMap object.
     """
-    return AacAssessabilityMap(
+    return AACAssessabilityMap(
         version="0.1.1",
         die_score=0.5,
         consequence_vector=ConsequenceVector(immediacy=0.3, visibility=0.6, delay_ms=None),

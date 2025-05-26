@@ -814,7 +814,7 @@ class L4AnchorStateObj(BaseModel):
     version: Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+$")] # e.g. "0.2.17"
     l4_epistemic_state_of_anchoring: Optional[L4EpistemicStateOfAnchoringEnum] = None # Made optional for error states
     overall_anchor_confidence: Optional[confloat(ge=0, le=1)] = None
-    aac_assessability_map: Optional[AACAssessabilityMap] = None # Made optional for error states
+    AACAssessabilityMap: Optional[AACAssessabilityMap] = None # Made optional for error states
     persona_alignment_context_engaged: Optional[PersonaAlignmentContextEngaged] = None # Made optional
     trace_threading_context: Optional[TraceThreadingContext] = None
     resolution_summary: Optional[ResolutionSummary] = None # Made optional
