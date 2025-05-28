@@ -1,6 +1,6 @@
 pydantic>=2.0,<3.0
-# Pinned to v1.x for now due to potential 'constr' evaluation issues observed with default/v2.
-# Further testing needed to confirm Pydantic v2 compatibility for all models.
+# Models should be compatible with Pydantic V2.x.
+# Ensure V1 specific features (like old constr) are updated.
 requests>=2.20.0
 playwright>=1.20.0
 google-adk
