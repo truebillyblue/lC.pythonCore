@@ -528,4 +528,3 @@ if __name__ == "__main__":
 # The previous task corrected this to have a standard "version" property inside L7_encoded_application.properties.
 # My Pydantic model L7EncodedApplication inherits from PlaceholderContentObj which has a "version" field.
 # This is consistent with the corrected schema.
-```
