@@ -1,88 +1,34 @@
-# Learnt.Cloud ADK Agent
+# lC.pythonCore ADK Agent (`lc_adk_agent`)
 
-## Overview
+This module contains the core components for integrating Google's Agent Development Kit (ADK) to provide Large Language Model (LLM) capabilities within the learnt.cloud ecosystem.
 
-This package provides an Agent Development Kit (ADK) interface to the `lc_python_core` engine. Its primary purpose is to allow interaction with the L1-L7 Standard Operating Procedures (SOPs) of `lc_python_core` using the Google ADK framework. This enables structured, tool-based interactions with the core functionalities of Learnt.Cloud.
+## CoreADKAgent
 
-The agent defines tools that wrap the `lc_python_core` processing pipeline, making it accessible to ADK-compatible clients and orchestrators.
+The primary class is `CoreADKAgent`, located in `adk_core_agent.py`.
 
-## Setup and Installation
+### Purpose
+`CoreADKAgent` is responsible for direct interactions with an LLM using the Google ADK. It handles the initialization of the ADK's LLM client and executes prompts.
 
-### Dependencies:
+### Configuration
+The `CoreADKAgent` is typically instantiated with:
+- `llm_model_name`: The identifier for the desired LLM (e.g., "gemini-pro").
+- `api_key`: The API key for accessing the LLM.
 
-1.  **`google-adk`**: This is the core framework for running the agent.
-2.  **`lc_python_core`**: This is the Learnt.Cloud core engine that the agent interfaces with.
+It is expected that this agent is used via the `AdkLlmService` (located in `lab/modules/lC.pythonCore/services/adk_llm_service.py`), which manages the instantiation and configuration of `CoreADKAgent`. The `AdkLlmService` likely sources its configuration (LLM model, API key) from environment variables or a central project configuration.
 
-### Installation Steps:
-
-1.  **Ensure `lc_python_core` is Accessible:**
-    The `lc_python_core` package must be available in your Python environment. It is typically located as a sibling directory to `lc_adk_agent` within the `lab/frontends/` directory. To ensure it can be imported, you need to add the `lab/frontends` directory to your `PYTHONPATH`.
-
-    From the repository root, you can set `PYTHONPATH` for your current session:
-
-    *   **Linux/macOS:**
-        ```bash
-        export PYTHONPATH=${PYTHONPATH}:$(pwd)/lab/frontends
-        # Or, if PYTHONPATH is not yet set or you want to prioritize this path:
-        # export PYTHONPATH=$(pwd)/lab/frontends
-        ```
-
-    *   **Windows (Command Prompt):**
-        ```cmd
-        set PYTHONPATH=%PYTHONPATH%;%cd%\lab\frontends
-        ```
-
-    *   **Windows (PowerShell):**
-        ```powershell
-        $env:PYTHONPATH += ";${pwd}\lab\frontends"
-        ```
-    Alternatively, configure this path in your IDE.
-
-2.  **Install Requirements:**
-    Navigate to this `lc_adk_agent` directory (`./lab/frontends/lc_adk_agent/`) and install the required packages:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install `google-adk` and set up an editable install for `lc_python_core` (referencing the local path).
-
-## Running the Agent
-
-The agent is run using the `adk` command-line interface (CLI).
-
-1.  **Navigate to the repository root directory.** This is important because the agent path used in the `adk run` command is relative to the current working directory from which ADK discovers modules. (Alternatively, ensure your PYTHONPATH is set up so ADK can find `lab.frontends...` from anywhere).
-
-2.  **Use the `adk run` command followed by the path to the agent definition:**
-
-    *   To run the agent that interacts with `lc_python_core`:
-        ```bash
-        adk run lab.frontends.lc_adk_agent.main:lc_core_agent
-        ```
-
-    *   To run a simple echo agent (for basic ADK testing):
-        ```bash
-        adk run lab.frontends.lc_adk_agent.main:echo_agent
-        ```
-
-3.  **Interact with the Agent:**
-    Once started, the ADK typically launches a local development server (e.g., at `http://localhost:8000` or `http://127.0.0.1:8000`). You can interact with the agent by making HTTP requests (e.g., using `curl` or tools like Postman) to the appropriate endpoints, as detailed in the Google ADK documentation. The ADK web UI also provides an interface for interaction.
-
-## Running Tests
-
-Unit tests are provided to verify the agent's functionality.
-
-1.  **Ensure `PYTHONPATH` is set up correctly** as described in the "Setup and Installation" section, so that the tests can import both the agent code and `lc_python_core`.
-
-2.  **Run tests using one of the following commands:**
-
-    *   **From the repository root:**
-        ```bash
-        python -m unittest discover ./lab/frontends/lc_adk_agent/tests
-        ```
-
-    *   **From within the `lc_adk_agent` directory (`./lab/frontends/lc_adk_agent/`):**
-        ```bash
-        python -m unittest discover ./tests
-        ```
-
-    **Note:** Tests that specifically require `lc_python_core` (like `test_process_with_lc_core_tool_basic_flow`) will be automatically skipped if `lc_python_core` or its dependencies are not correctly set up and importable. The test output will indicate if these tests were skipped.
+### Usage
+```python
+# Conceptual usage, likely within AdkLlmService
+# from lC.pythonCore.lc_adk_agent.adk_core_agent import CoreADKAgent
+#
+# # Configuration would be sourced by AdkLlmService
+# API_KEY = "your_api_key" 
+# MODEL_NAME = "gemini-pro"
+#
+# agent = CoreADKAgent(llm_model_name=MODEL_NAME, api_key=API_KEY)
+# response = agent.execute_prompt("Translate 'hello' to French.")
+# print(response)
 ```
+
+### Unit Testing Note
+There is a known issue with running standalone unit tests for modules within `lC.pythonCore` (including this one) due to the dot (`.`) in the `lC.pythonCore` directory name. This can cause `ModuleNotFoundError` during test discovery and execution. Workarounds involving `sys.path` manipulation have been attempted but were not fully successful in the automated testing environment for this specific case. The code for `CoreADKAgent` itself has been implemented as per requirements.

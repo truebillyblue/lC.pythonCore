@@ -1,11 +1,13 @@
 from datetime import datetime as dt, timezone
 from typing import List, Dict, Tuple, Any, Optional
 
-from ..schemas.mada_schema import (
-    MadaSeed, L1StartleContextObj, L2FrameTypeObj, L2Trace, TemporalHintL2,
-    CommunicationContextL2,
+# Corrected imports to point to lc_python_core.mada_seed_types
+from lc_python_core.mada_seed_types import (
+    MadaSeed, L1StartleContext, L2FrameTypeObj, L2Trace, TemporalHintL2,
+    CommunicationContextL2, L1Trace, # Added L1Trace for completeness
     L2EpistemicStateOfFramingEnum, InputClassL2Enum,
-    TemporalHintProvenanceL2Enum, L2ValidationStatusOfFrameEnum
+    TemporalHintProvenanceL2Enum, L2ValidationStatusOfFrameEnum,
+    PYDANTIC_AVAILABLE # Import PYDANTIC_AVAILABLE flag
 )
 
 # Basic logging function placeholder (reuse from L1 or define if separate)
@@ -30,33 +32,71 @@ def _frame_validate_l1_data_in_madaSeed(mada_seed_input: MadaSeed) -> bool:
             log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Input madaSeed is None"})
             return False
 
-        l1_startle_context_obj = mada_seed_input.seed_content.L1_startle_reflex.L1_startle_context_obj
-        l1_trace = mada_seed_input.trace_metadata.L1_trace
+        l1_startle_context = None
+        l1_trace = None
+        raw_signals = None
 
-        if not l1_startle_context_obj or not l1_startle_context_obj.version:
-            log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing or invalid L1_startle_context_obj in madaSeed for L2"})
+        # This inner try-except block is for parsing/accessing data.
+        # If any part of this fails, it means the mada_seed_input is malformed for L2 processing.
+        if PYDANTIC_AVAILABLE and isinstance(mada_seed_input, MadaSeed):
+            # Pydantic model access
+            l1_startle_context = mada_seed_input.seed_content.L1_startle_reflex.L1_startle_context
+            l1_trace = mada_seed_input.trace_metadata.L1_trace
+            raw_signals = mada_seed_input.seed_content.raw_signals
+        elif isinstance(mada_seed_input, dict): # Check if it's a dictionary for fallback
+            log_internal_warning("Helper:_frame_validate_l1_data", {"info": "Input madaSeed is a dictionary. Attempting dictionary-style access."})
+            seed_content = mada_seed_input.get('seed_content', {})
+            l1_startle_reflex = seed_content.get('L1_startle_reflex', {})
+            l1_startle_context = l1_startle_reflex.get('L1_startle_context')
+            
+            trace_metadata = mada_seed_input.get('trace_metadata', {})
+            l1_trace = trace_metadata.get('L1_trace')
+            
+            raw_signals = seed_content.get('raw_signals')
+        else: # Not a Pydantic model or a dict
+            log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Input madaSeed is not a recognized Pydantic model or dictionary."})
+            return False # Cannot proceed if type is unknown
+
+        # Validate the extracted parts
+        if not l1_startle_context:
+             log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing L1_startle_context in madaSeed for L2"})
+             return False
+        if isinstance(l1_startle_context, L1StartleContext) and not l1_startle_context.version:
+             log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Invalid L1_startle_context (missing version) in madaSeed for L2"})
+             return False
+        
+        if not l1_trace:
+            log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing L1_trace in madaSeed for L2"})
             return False
-        if not l1_trace or not l1_trace.epistemic_state_L1:
-            log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing or invalid L1_trace in madaSeed for L2"})
+        
+        current_l1_epistemic_state = getattr(l1_trace, 'epistemic_state_L1', None) if isinstance(l1_trace, L1Trace) else l1_trace.get('epistemic_state_L1')
+        if not current_l1_epistemic_state:
+             log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing epistemic_state_L1 in L1_trace for L2"})
+             return False
+        if not current_l1_epistemic_state.startswith("Startle_Complete"):
+            log_internal_info("Helper:_frame_validate_l1_data", {"reason": f"L1 state '{current_l1_epistemic_state}' not suitable for L2 framing."})
             return False
-        if not l1_trace.epistemic_state_L1.startswith("Startle_Complete"):
-            log_internal_info("Helper:_frame_validate_l1_data", {"reason": f"L1 state '{l1_trace.epistemic_state_L1}' not suitable for L2 framing."})
-            return False
-        # In madaSeed v0.3, raw_signals is at seed_content.raw_signals
-        if not mada_seed_input.seed_content.raw_signals: # Check for None or empty list
+
+        if raw_signals is None: 
             log_internal_warning("Helper:_frame_validate_l1_data", {"error": "Missing raw_signals in madaSeed.seed_content for L2"})
             return False
-    except AttributeError as e: # Handles cases where nested attributes might be missing
-        log_internal_warning("Helper:_frame_validate_l1_data", {"error": f"AttributeError validating L1 data: {str(e)}"})
+            
+    # This except block is for the outer try, catching exceptions during the access logic above.
+    except AttributeError as e: 
+        log_internal_warning("Helper:_frame_validate_l1_data", {"error": f"AttributeError during L1 data validation: {str(e)}"})
         return False
-    except Exception as e:
-        log_internal_warning("Helper:_frame_validate_l1_data", {"error": f"Exception validating L1 data: {str(e)}"})
+    except KeyError as e: 
+        log_internal_warning("Helper:_frame_validate_l1_data", {"error": f"KeyError during L1 data validation: {str(e)}"})
         return False
+    except Exception as e: 
+        log_internal_warning("Helper:_frame_validate_l1_data", {"error": f"Unexpected exception during L1 data validation: {str(e)}"})
+        return False
+        
+    # If all checks passed and no exceptions were raised and handled by returning False,
+    # then the L1 data is considered valid for L2 processing.
     return True
 
-def _frame_get_current_timestamp_utc() -> str:
-    """Returns a fixed, unique timestamp string."""
-    return "2023-10-28T11:30:00Z"
+# Removed _frame_get_current_timestamp_utc helper, will use dt.now(timezone.utc) directly
 
 def _frame_extract_communication_context_from_input(input_event_comm_context_conceptual: Optional[Dict[str, Any]]) -> CommunicationContextL2:
     """
@@ -73,10 +113,11 @@ def _frame_extract_communication_context_from_input(input_event_comm_context_con
         interaction_channel_L2=input_event_comm_context_conceptual.get('channel_hint')
     )
 
-def _frame_build_signal_components_summary_from_l1(l1_startle_context_obj: L1StartleContextObj) -> Dict[str, Any]:
+def _frame_build_signal_components_summary_from_l1(l1_startle_context: L1StartleContext) -> Dict[str, Any]: # Changed L1StartleContextObj to L1StartleContext
     """Extracts summary from L1's signal components metadata."""
     summary: Dict[str, Any] = {"component_count": 0, "primary_component_role": None, "primary_component_media_type_hint": None, "total_byte_size_hint": 0}
-    components_l1 = l1_startle_context_obj.signal_components_metadata_L1
+    # Assuming l1_startle_context is not None by the time this helper is called, based on _frame_validate_l1_data
+    components_l1 = l1_startle_context.signal_components_metadata_L1
     
     if components_l1: # Ensure components_l1 is not None and not empty
         summary['component_count'] = len(components_l1)
@@ -96,34 +137,44 @@ def _frame_classify_input(components_summary_l2: Dict[str, Any], input_origin_l1
     """Classifies input based on component summary and context."""
     primary_type = components_summary_l2.get('primary_component_media_type_hint', '').lower() if components_summary_l2.get('primary_component_media_type_hint') else ""
     component_count = components_summary_l2.get('component_count', 1)
-    
+    input_origin_l1_lower = input_origin_l1.lower() if input_origin_l1 else ""
+
     is_prompt_like = False
     is_comms_like = False
 
     if primary_type.startswith("text/") or primary_type == '':
         is_prompt_like = True
+    
+    # Specific ComfyUI prompt condition
+    if "comfyui" in input_origin_l1_lower and primary_type == "text/plain":
+        log_internal_info("Helper:_frame_classify_input", {"reason": "ComfyUI origin with text/plain, classified as PROMPT.", "origin": input_origin_l1, "media_type": primary_type})
+        return InputClassL2Enum.PROMPT
+
     if primary_type.startswith("application/json") or primary_type.startswith("application/xml"):
         is_comms_like = True
     
-    if input_origin_l1:
-        input_origin_l1_lower = input_origin_l1.lower()
-        if 'api' in input_origin_l1_lower or 'system_event' in input_origin_l1_lower:
-            is_comms_like = True
+    if 'api' in input_origin_l1_lower or 'system_event' in input_origin_l1_lower:
+        is_comms_like = True
     
     if interaction_channel_l2:
         interaction_channel_l2_lower = interaction_channel_l2.lower()
         if 'log' in interaction_channel_l2_lower: # Example, might need more sophisticated logic
             is_comms_like = True
             
-    if is_prompt_like and is_comms_like:
+    if is_prompt_like and is_comms_like: # If, after ComfyUI check, it still seems mixed
+        log_internal_info("Helper:_frame_classify_input", {"reason": "Classified as MIXED.", "origin": input_origin_l1, "media_type": primary_type, "channel": interaction_channel_l2})
         return InputClassL2Enum.MIXED
     if is_comms_like:
+        log_internal_info("Helper:_frame_classify_input", {"reason": "Classified as COMMS.", "origin": input_origin_l1, "media_type": primary_type, "channel": interaction_channel_l2})
         return InputClassL2Enum.COMMS
     if is_prompt_like:
+        log_internal_info("Helper:_frame_classify_input", {"reason": "Classified as PROMPT.", "origin": input_origin_l1, "media_type": primary_type, "channel": interaction_channel_l2})
         return InputClassL2Enum.PROMPT
     if component_count > 1: # If multiple components, often more like "comms"
+        log_internal_info("Helper:_frame_classify_input", {"reason": "Multiple components, classified as COMMS.", "count": component_count})
         return InputClassL2Enum.COMMS
         
+    log_internal_info("Helper:_frame_classify_input", {"reason": "Defaulted to UNKNOWN_L2_CLASSIFIED.", "origin": input_origin_l1, "media_type": primary_type, "channel": interaction_channel_l2})
     return InputClassL2Enum.UNKNOWN_L2_CLASSIFIED
 
 def _frame_initial_checks(components_summary_l2: Dict[str, Any]) -> Tuple[L2ValidationStatusOfFrameEnum, List[str]]:
@@ -164,16 +215,24 @@ def _frame_validate_structure(input_class: InputClassL2Enum, primary_media_hint:
     Baseline: if input_class is "prompt" and primary_media_hint is "text/plain" or empty,
     return ("plaintext_prompt", "Success_Framed"). Otherwise, ("unknown_frame_L2", "Failure_NoStructureDetected").
     """
+    primary_media_hint_lower = primary_media_hint.lower() if primary_media_hint else ""
+
     if input_class == InputClassL2Enum.PROMPT and \
-       (primary_media_hint is None or primary_media_hint.lower() == "text/plain" or primary_media_hint == ""):
+       (primary_media_hint is None or primary_media_hint_lower == "text/plain" or primary_media_hint_lower == ""):
+        log_internal_info("Helper:_frame_validate_structure", {"reason": "PROMPT with text/plain hint.", "frame_type": "plaintext_prompt"})
         return "plaintext_prompt", L2ValidationStatusOfFrameEnum.SUCCESS_FRAMED
     
-    # Add more sophisticated frame detection here based on input_class and hints
-    # e.g., if input_class is "comms" and primary_media_hint is "application/json"
-    if input_class == InputClassL2Enum.COMMS and primary_media_hint and primary_media_hint.lower() == "application/json":
-        # Conceptual: try to parse, if fails -> Failure_AmbiguousStructure or Failure_NoStructureDetected
-        return "json_comms_L2", L2ValidationStatusOfFrameEnum.SUCCESS_FRAMED # Assuming valid JSON for baseline
+    if input_class == InputClassL2Enum.COMMS and primary_media_hint_lower == "application/json":
+        # Optimistically assume valid JSON structure for baseline if hint is application/json.
+        # Actual content parsing/validation is deferred.
+        log_internal_warning("Helper:_frame_validate_structure", {
+            "reason": "COMMS with application/json hint. Optimistically framing as json_comms_payload.",
+            "frame_type": "json_comms_payload",
+            "warning": "Actual JSON content parsing and validation is deferred."
+        })
+        return "json_comms_payload", L2ValidationStatusOfFrameEnum.SUCCESS_FRAMED
 
+    log_internal_info("Helper:_frame_validate_structure", {"reason": "Defaulting to unknown_frame_L2.", "input_class": input_class, "media_hint": primary_media_hint})
     return "unknown_frame_L2", L2ValidationStatusOfFrameEnum.FAILURE_NOSTRUCTUREDETECTED
 
 
@@ -198,7 +257,8 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
     """
     Processes the madaSeed object from L1 (startle) to populate L2 framing information.
     """
-    current_time_fail_dt = dt.fromisoformat(_frame_get_current_timestamp_utc().replace('Z', '+00:00'))
+    # Use dynamic UTC timestamp
+    current_timestamp_utc = dt.now(timezone.utc)
 
     if not _frame_validate_l1_data_in_madaSeed(mada_seed_input):
         error_detail_msg = "Invalid or incomplete L1 data in input madaSeed for L2 processing."
@@ -207,10 +267,12 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
         # Update L2 trace and content with error state
         if mada_seed_input: # Ensure mada_seed_input is not None before trying to update
             mada_seed_input.trace_metadata.L2_trace = L2Trace(
-                version_L2_trace_schema="0.1.0", sop_name="lC.SOP.frame_click",
-                completion_timestamp_L2=current_time_fail_dt,
-                epistemic_state_L2=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2,
-                error_detail=error_detail_msg
+                version_Lx_trace_schema="0.1.0", # field from PlaceholderTraceObj
+                sop_name="lC.SOP.frame_click",
+                completion_timestamp_Lx=current_timestamp_utc, # field from PlaceholderTraceObj
+                epistemic_state_Lx=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2.value, # Use .value for string field
+                error_details=error_detail_msg # field from PlaceholderTraceObj
+                # Add any L2Trace specific fields with defaults if not covered by PlaceholderTraceObj
             )
             # Update L2 content part
             mada_seed_input.seed_content.L1_startle_reflex.L2_frame_type.L2_frame_type_obj = L2FrameTypeObj(
@@ -221,21 +283,22 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
         return mada_seed_input # Return modified madaSeed or original if None
 
     trace_id = mada_seed_input.seed_id
-    l1_startle_context_obj = mada_seed_input.seed_content.L1_startle_reflex.L1_startle_context_obj
-    # raw_signals = mada_seed_input.seed_content.raw_signals # Not directly used in MR logic for L2 helpers
+    # Ensure correct Pydantic attribute access. L1_startle_context_obj changed to L1_startle_context
+    l1_startle_context = mada_seed_input.seed_content.L1_startle_reflex.L1_startle_context
+    # raw_signals_content = mada_seed_input.seed_content.raw_signals # Use this if raw signals are needed directly
 
     # Initialize L2_frame_type_obj with version, to be populated
     working_l2_frame_type_obj = L2FrameTypeObj(
         version="0.1.2",
         L2_epistemic_state_of_framing=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2, # Default to error
-        # Initialize other required fields to default/None if not immediately available
-        input_class_L2=None,
-        frame_type_L2=None,
-        temporal_hint_L2=None,
-        communication_context_L2=None,
-        L2_validation_status_of_frame=None,
-        L2_anomaly_flags_from_framing=[],
-        L2_framing_confidence_score=None
+        input_class_L2=InputClassL2Enum.UNKNOWN_L2_CLASSIFIED, # Default enum
+        frame_type_L2=None, # Will be determined
+        temporal_hint_L2=None, # Will be determined
+        communication_context_L2=CommunicationContextL2(), # Default empty object
+        L2_validation_status_of_frame=L2ValidationStatusOfFrameEnum.FAILURE_NOSTRUCTUREDETECTED, # Default enum
+        L2_anomaly_flags_from_framing=[], # Default empty list
+        L2_framing_confidence_score=0.0, # Default score
+        error_details=None # Default None
     )
     
     try:
@@ -244,19 +307,19 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
         conceptual_input_comm_context = {
             "source_agent_id_hint": None, # Could be derived from a session ID in L1 origin_hint
             "destination_agent_id_hint": trace_id, # Or a system agent UID
-            "origin_env_hint": l1_startle_context_obj.input_origin_L1,
+            "origin_env_hint": l1_startle_context.input_origin_L1, # Changed L1_startle_context_obj to l1_startle_context
             "channel_hint": None # Could be part of origin_hint
         }
         comms_context_l2 = _frame_extract_communication_context_from_input(conceptual_input_comm_context)
         working_l2_frame_type_obj.communication_context_L2 = comms_context_l2
         
         # --- Prepare summary of L1 signal components ---
-        components_summary_for_l2 = _frame_build_signal_components_summary_from_l1(l1_startle_context_obj)
+        components_summary_for_l2 = _frame_build_signal_components_summary_from_l1(l1_startle_context) # Changed L1_startle_context_obj to l1_startle_context
 
         # --- Step 3: Classify Input ---
         input_class = _frame_classify_input(
             components_summary_for_l2, 
-            l1_startle_context_obj.input_origin_L1, 
+            l1_startle_context.input_origin_L1, # Changed L1_startle_context_obj to l1_startle_context
             comms_context_l2.interaction_channel_L2
         )
         working_l2_frame_type_obj.input_class_L2 = input_class
@@ -292,7 +355,7 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
                 # L1 trace_creation_time_L1 is already a datetime object
                 determined_temporal_hint_l2 = _frame_extract_temporal_hint_l2(
                     determined_frame_type_l2, 
-                    l1_startle_context_obj.trace_creation_time_L1, 
+                    l1_startle_context.trace_creation_time_L1, # Changed L1_startle_context_obj to l1_startle_context
                     None # primary_raw_signal_ref - Not needed for baseline
                 )
                 # --- Step 9: Determine Final Outcome (Success Case) ---
@@ -314,42 +377,58 @@ def frame_click_process(mada_seed_input: MadaSeed) -> MadaSeed:
         mada_seed_input.seed_content.L1_startle_reflex.L2_frame_type.L2_frame_type_obj = working_l2_frame_type_obj
 
         # --- Populate L2_trace ---
-        current_time_l2_final_dt = dt.fromisoformat(_frame_get_current_timestamp_utc().replace('Z', '+00:00'))
+        # current_time_l2_final_dt = dt.fromisoformat(_frame_get_current_timestamp_utc().replace('Z', '+00:00')) # Replaced by current_timestamp_utc
         l2_trace_obj = L2Trace(
-            version_L2_trace_schema="0.1.0", 
+            version_Lx_trace_schema="0.1.0", # field from PlaceholderTraceObj
             sop_name="lC.SOP.frame_click", 
-            completion_timestamp_L2=current_time_l2_final_dt,
-            epistemic_state_L2=final_l2_epistemic_state,
-            L2_input_class_determined_in_trace=working_l2_frame_type_obj.input_class_L2,
-            L2_frame_type_determined_in_trace=working_l2_frame_type_obj.frame_type_L2,
-            L2_validation_status_in_trace=working_l2_frame_type_obj.L2_validation_status_of_frame,
-            L2_temporal_hint_provenance_in_trace=working_l2_frame_type_obj.temporal_hint_L2.provenance if working_l2_frame_type_obj.temporal_hint_L2 else None,
-            L2_communication_context_summary={ # Example summary
-                "source_agent_uid_hint": comms_context_l2.source_agent_uid_L2,
-                "destination_agent_uid_hint": comms_context_l2.destination_agent_uid_L2
+            completion_timestamp_Lx=current_timestamp_utc, # field from PlaceholderTraceObj, use current_timestamp_utc
+            epistemic_state_Lx=final_l2_epistemic_state.value, # Use .value for string field
+            # L2Trace specific fields (ensure these are defined in L2Trace or set via **kwargs if PlaceholderTraceObj is flexible)
+            L2_input_class_determined_in_trace=working_l2_frame_type_obj.input_class_L2.value if working_l2_frame_type_obj.input_class_L2 else None, # Use .value
+            L2_frame_type_determined_in_trace=working_l2_frame_type_obj.frame_type_L2, # Assuming this is already a string or None
+            L2_temporal_hint_provenance_in_trace=working_l2_frame_type_obj.temporal_hint_L2.provenance.value if (working_l2_frame_type_obj.temporal_hint_L2 and working_l2_frame_type_obj.temporal_hint_L2.provenance) else None, # Use .value
+            L2_communication_context_summary={ 
+                "source_agent_uid_L2": comms_context_l2.source_agent_uid_L2,
+                "destination_agent_uid_L2": comms_context_l2.destination_agent_uid_L2,
+                "origin_environment_L2": comms_context_l2.origin_environment_L2,
+                "interaction_channel_L2": comms_context_l2.interaction_channel_L2
             } if comms_context_l2 else None,
-            L2_anomaly_flags_count=len(working_l2_frame_type_obj.L2_anomaly_flags_from_framing or [])
+            L2_validation_status_in_trace=working_l2_frame_type_obj.L2_validation_status_of_frame.value if working_l2_frame_type_obj.L2_validation_status_of_frame else None, # Use .value
+            L2_anomaly_flags_count=len(working_l2_frame_type_obj.L2_anomaly_flags_from_framing or []),
+            L2_applied_policy_refs=[], # Explicitly set to empty list as per schema/default
+            error_details=working_l2_frame_type_obj.error_details # field from PlaceholderTraceObj
         )
         mada_seed_input.trace_metadata.L2_trace = l2_trace_obj
         
+        log_internal_info("frame_click_process", {"trace_id": trace_id, "L2_epistemic_state": final_l2_epistemic_state.value if hasattr(final_l2_epistemic_state, 'value') else str(final_l2_epistemic_state)})
         return mada_seed_input
 
     except Exception as critical_process_error:
         error_msg = f"Critical L2 Failure: {str(critical_process_error)}"
         log_critical_error("Frame Click Process Failed Critically", {"trace_id": trace_id, "error": error_msg})
         
-        current_time_crit_fail_dt = dt.fromisoformat(_frame_get_current_timestamp_utc().replace('Z', '+00:00'))
+        # current_time_crit_fail_dt = dt.fromisoformat(_frame_get_current_timestamp_utc().replace('Z', '+00:00')) # Replaced by current_timestamp_utc
         
+        # Ensure working_l2_frame_type_obj is updated with the critical error
+        # Use .value for Enum assignment to string fields in L2FrameTypeObj if necessary, assuming Pydantic handles it.
+        # For working_l2_frame_type_obj, its fields are typed with Enums directly, so direct assignment is fine.
+        working_l2_frame_type_obj.L2_epistemic_state_of_framing = L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2
+        working_l2_frame_type_obj.error_details = error_msg
+        working_l2_frame_type_obj.L2_validation_status_of_frame = L2ValidationStatusOfFrameEnum.FAILURE_INTERNALERROR 
+        mada_seed_input.seed_content.L1_startle_reflex.L2_frame_type.L2_frame_type_obj = working_l2_frame_type_obj
+        
+        # Update L2_trace with critical error information
         mada_seed_input.trace_metadata.L2_trace = L2Trace(
-             version_L2_trace_schema="0.1.0", sop_name="lC.SOP.frame_click",
-             completion_timestamp_L2=current_time_crit_fail_dt, 
-             epistemic_state_L2=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2,
-             error_detail=error_msg
-        )
-        mada_seed_input.seed_content.L1_startle_reflex.L2_frame_type.L2_frame_type_obj = L2FrameTypeObj(
-            version="0.1.2", 
-            L2_epistemic_state_of_framing=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2, 
-            error_details=error_msg
+             version_Lx_trace_schema="0.1.0", # field from PlaceholderTraceObj
+             sop_name="lC.SOP.frame_click",
+             completion_timestamp_Lx=current_timestamp_utc, # field from PlaceholderTraceObj, use current_timestamp_utc
+             epistemic_state_Lx=L2EpistemicStateOfFramingEnum.LCL_FAILURE_INTERNAL_L2.value, # Use .value for string field
+             # L2Trace specific fields
+             L2_input_class_determined_in_trace=working_l2_frame_type_obj.input_class_L2.value if working_l2_frame_type_obj.input_class_L2 else None, # Use .value
+             L2_frame_type_determined_in_trace=working_l2_frame_type_obj.frame_type_L2,
+             L2_validation_status_in_trace=L2ValidationStatusOfFrameEnum.FAILURE_INTERNALERROR.value if L2ValidationStatusOfFrameEnum.FAILURE_INTERNALERROR else None, # Use .value
+             error_details=error_msg, # field from PlaceholderTraceObj
+             L2_applied_policy_refs=[] # Default for error case
         )
         return mada_seed_input
 

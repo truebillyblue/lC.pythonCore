@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
 try:
@@ -128,25 +129,92 @@ else:
 # --- L2-L7 Structures (using placeholders) ---
 
 # L2 Frame Type
+
+# Enum for L2 Epistemic State of Framing
+class L2EpistemicStateOfFramingEnum(str, Enum):
+    FRAMED = "Framed"
+    LCL_CLARIFY_STRUCTURE = "LCL-Clarify-Structure"
+    LCL_DEFER_STRUCTURE = "LCL-Defer-Structure"
+    LCL_FAILURE_SIZE_NOISE = "LCL-Failure-SizeNoise"
+    LCL_FAILURE_AMBIGUOUS_FRAME = "LCL-Failure-AmbiguousFrame"
+    LCL_FAILURE_MISSING_COMMS_CONTEXT = "LCL-Failure-MissingCommsContext"
+    LCL_FAILURE_INTERNAL_L2 = "LCL-Failure-Internal_L2"
+
+# Enum for L2 Temporal Hint Provenance
+class TemporalHintProvenanceL2Enum(str, Enum):
+    EXPLICIT_CONTENT_L2_PARSED = "explicit_content_L2_parsed"
+    EXPLICIT_METADATA_L2_USED = "explicit_metadata_L2_used"
+    FALLBACK_L1_CREATION_TIME = "fallback_L1_creation_time"
+    PARSING_ERROR_L2 = "parsing_error_L2"
+
+# Enum for L2 Input Class
+class InputClassL2Enum(str, Enum):
+    PROMPT = "prompt"
+    COMMS = "comms"
+    MIXED = "mixed"
+    UNKNOWN_L2_CLASSIFIED = "unknown_L2_classified"
+
+# Enum for L2 Validation Status of Frame
+class L2ValidationStatusOfFrameEnum(str, Enum):
+    SUCCESS_FRAMED = "Success_Framed"
+    FAILURE_SIZEORNOISE = "Failure_SizeOrNoise" # Note: Schema has "SizeOrNoise"
+    FAILURE_NOSTRUCTUREDETECTED = "Failure_NoStructureDetected"
+    FAILURE_AMBIGUOUSSTRUCTURE = "Failure_AmbiguousStructure"
+    FAILURE_MISSINGCOMMSCONTEXT = "Failure_MissingCommsContext"
+    # Adding FAILURE_INTERNALERROR as it's commonly used in SOP logic for L2, even if not in this specific schema path for L2_validation_status_of_frame
+    FAILURE_INTERNALERROR = "Failure_InternalError" 
+
+
 if PYDANTIC_AVAILABLE:
+    # Model for L2 Temporal Hint
+    class TemporalHintL2(MadaBaseModel):
+        value: datetime
+        provenance: TemporalHintProvenanceL2Enum
+
+    # Model for L2 Communication Context
+    class CommunicationContextL2(MadaBaseModel):
+        source_agent_uid_L2: Optional[str] = None
+        destination_agent_uid_L2: Optional[str] = None
+        origin_environment_L2: Optional[str] = None
+        interaction_channel_L2: Optional[str] = None
+
     class L2FrameTypeObj(PlaceholderContentObj): # Inherits version, description, error_details
         # L2 specific fields can be added later if needed for shell
-        input_class_L2: Optional[str] = None # Example from schema
+        input_class_L2: Optional[InputClassL2Enum] = None # Use Enum
         frame_type_L2: Optional[str] = None  # Example from schema
-        temporal_hint_L2: Optional[Dict[str, Any]] = None # Example from schema
-        communication_context_L2: Optional[Dict[str, Any]] = None # Example from schema
-        L2_validation_status_of_frame: Optional[str] = None # Example from schema
-        L2_epistemic_state_of_framing: Optional[str] = None # Example from schema
+        temporal_hint_L2: Optional[TemporalHintL2] = None # Use the new TemporalHintL2 model
+        communication_context_L2: Optional[CommunicationContextL2] = None # Use the new CommunicationContextL2 model
+        L2_validation_status_of_frame: Optional[L2ValidationStatusOfFrameEnum] = None # Use Enum
+        L2_epistemic_state_of_framing: Optional[L2EpistemicStateOfFramingEnum] = None # Use the Enum
+        L2_anomaly_flags_from_framing: Optional[List[str]] = Field(default_factory=list)
+        L2_framing_confidence_score: Optional[float] = None # As per schema: number, nullable
     class L2Trace(PlaceholderTraceObj): sop_name: str = "lC.SOP.frame_click"
 else:
+    # Dataclass for L2 Temporal Hint Provenance Enum (conceptually, used as str)
+    # No direct Enum for dataclass str fields, but values should match
+    
+    @dataclass
+    class TemporalHintL2:
+        value: datetime
+        provenance: str # Store as string, should be one of TemporalHintProvenanceL2Enum values
+
+    @dataclass
+    class CommunicationContextL2:
+        source_agent_uid_L2: Optional[str] = None
+        destination_agent_uid_L2: Optional[str] = None
+        origin_environment_L2: Optional[str] = None
+        interaction_channel_L2: Optional[str] = None
+
     @dataclass
     class L2FrameTypeObj(PlaceholderContentObj):
-        input_class_L2: Optional[str] = None
+        input_class_L2: Optional[InputClassL2Enum] = None # Use Enum conceptually; will be string for dataclass if not using advanced libraries
         frame_type_L2: Optional[str] = None
-        temporal_hint_L2: Optional[Dict[str, Any]] = None
-        communication_context_L2: Optional[Dict[str, Any]] = None
-        L2_validation_status_of_frame: Optional[str] = None
-        L2_epistemic_state_of_framing: Optional[str] = None
+        temporal_hint_L2: Optional[TemporalHintL2] = None # Use the new TemporalHintL2 dataclass
+        communication_context_L2: Optional[CommunicationContextL2] = None # Use the new CommunicationContextL2 dataclass
+        L2_validation_status_of_frame: Optional[L2ValidationStatusOfFrameEnum] = None # Use Enum conceptually
+        L2_epistemic_state_of_framing: Optional[L2EpistemicStateOfFramingEnum] = None # Use the Enum
+        L2_anomaly_flags_from_framing: Optional[List[str]] = dc_field(default_factory=list)
+        L2_framing_confidence_score: Optional[float] = None # As per schema: number, nullable
     @dataclass
     class L2Trace(PlaceholderTraceObj): sop_name: str = "lC.SOP.frame_click"
 
